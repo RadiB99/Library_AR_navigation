@@ -2,16 +2,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR Library Experience</title>
+    <title>Library AR Experience</title>
+
+    <!-- A-Frame + AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
-  </head>
 
-  <body style="margin: 0; overflow: hidden">
-    <!-- Start Screen -->
-    <div
-      id="startScreen"
-      style="
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #startScreen {
         position: fixed;
         inset: 0;
         display: flex;
@@ -22,34 +24,64 @@
         font-size: 1.2em;
         z-index: 100;
         cursor: pointer;
-      "
-    >
-      <p>👋 Tap anywhere to start AR experience</p>
-    </div>
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        background: #f3f3f3;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Start Overlay -->
+    <div id="startScreen">👋 Tap anywhere to start AR experience</div>
 
     <!-- AR Scene -->
     <a-scene
       embedded
-      arjs="sourceType: camera; facingMode: environment; debugUIEnabled: false;"
+      arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
       vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true;"
+      renderer="logarithmicDepthBuffer: true; antialias: true;"
+      device-orientation-permission-ui="enabled: true"
       style="display: none"
     >
-      <a-camera id="userCam" position="0 1.6 0"></a-camera>
+      <!-- For testing, a visible object -->
+      <a-box position="0 1 -3" color="tomato"></a-box>
+      <a-sky color="#ECECEC"></a-sky>
+
+      <a-camera id="userCam" position="0 1.6 0" camera></a-camera>
     </a-scene>
 
     <script>
       const startScreen = document.getElementById("startScreen");
       const scene = document.querySelector("a-scene");
 
-      // Detect both click & touch (for iPhone Safari)
+      // Handle both tap and touch (iPhone friendly)
       startScreen.addEventListener("click", startAR);
       startScreen.addEventListener("touchstart", startAR);
 
       function startAR() {
         startScreen.style.display = "none";
         scene.style.display = "block";
+        requestIOSPermission();
         initARScene();
+      }
+
+      // iOS 13+ motion sensor permission fix
+      function requestIOSPermission() {
+        if (
+          typeof DeviceMotionEvent !== "undefined" &&
+          typeof DeviceMotionEvent.requestPermission === "function"
+        ) {
+          DeviceMotionEvent.requestPermission()
+            .then((response) => {
+              console.log("Motion permission:", response);
+            })
+            .catch(console.error);
+        }
       }
 
       function initARScene() {
@@ -58,8 +90,8 @@
         btns.innerHTML = `
           <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
                       display:flex;gap:10px;z-index:10;">
-            <button id="forward" style="padding:10px 20px;font-size:16px;">↑ Forward</button>
-            <button id="backward" style="padding:10px 20px;font-size:16px;">↓ Back</button>
+            <button id="forward">↑ Forward</button>
+            <button id="backward">↓ Back</button>
           </div>`;
         document.body.appendChild(btns);
 
@@ -67,14 +99,14 @@
         const step = 0.5;
         const cam = document.querySelector("#userCam");
 
-        // Keyboard movement (for testing on desktop)
+        // Keyboard movement (for desktop)
         window.addEventListener("keydown", (e) => {
           if (e.key === "ArrowUp") z -= step;
           if (e.key === "ArrowDown") z += step;
           cam.setAttribute("position", `0 1.6 ${z}`);
         });
 
-        // Touch button controls
+        // Touch button movement
         document.getElementById("forward").onclick = () => {
           z -= step;
           cam.setAttribute("position", `0 1.6 ${z}`);
@@ -84,21 +116,19 @@
           cam.setAttribute("position", `0 1.6 ${z}`);
         };
 
-        // Load library items from JSON file
+        // Load library items from JSON
         fetch("libraryPath.json")
           .then((res) => res.json())
           .then((data) => {
             const scene = document.querySelector("a-scene");
 
             data.points.forEach((p) => {
-              // Yellow sphere marker
               const sphere = document.createElement("a-sphere");
               sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
               sphere.setAttribute("color", "yellow");
               sphere.setAttribute("radius", "0.25");
               scene.appendChild(sphere);
 
-              // Label text
               const label = document.createElement("a-text");
               label.setAttribute("value", p.label);
               label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
@@ -109,9 +139,7 @@
               scene.appendChild(label);
             });
           })
-          .catch((err) => {
-            console.error("Error loading JSON:", err);
-          });
+          .catch((err) => console.error("Error loading JSON:", err));
       }
     </script>
   </body>
