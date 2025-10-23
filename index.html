@@ -55,7 +55,7 @@
       const startScreen = document.getElementById("startScreen");
       const scene = document.querySelector("a-scene");
 
-      // Handle both tap and touch (iPhone friendly)
+      // Handle both tap and touch (for iPhone Safari)
       startScreen.addEventListener("click", startAR);
       startScreen.addEventListener("touchstart", startAR);
 
@@ -66,16 +66,14 @@
         initARScene();
       }
 
-      // iOS 13+ motion sensor permission fix
+      // iOS motion permission (fix for iPhone)
       function requestIOSPermission() {
         if (
           typeof DeviceMotionEvent !== "undefined" &&
           typeof DeviceMotionEvent.requestPermission === "function"
         ) {
           DeviceMotionEvent.requestPermission()
-            .then((response) => {
-              console.log("Motion permission:", response);
-            })
+            .then((response) => console.log("Motion permission:", response))
             .catch(console.error);
         }
       }
@@ -95,7 +93,7 @@
         const step = 0.5;
         const cam = document.querySelector("#userCam");
 
-        // Keyboard movement (for desktop)
+        // Keyboard movement (desktop)
         window.addEventListener("keydown", (e) => {
           if (e.key === "ArrowUp") z -= step;
           if (e.key === "ArrowDown") z += step;
@@ -112,41 +110,31 @@
           cam.setAttribute("position", `0 1.6 ${z}`);
         };
 
-        // Load library items from JSON
-fetch("libraryPath.json")
-  .then((res) => res.json())
-  .then((data) => {
-    const scene = document.querySelector("a-scene");
+        // Load library items from JSON (just spheres + labels)
+        fetch("libraryPath.json")
+          .then((res) => res.json())
+          .then((data) => {
+            const scene = document.querySelector("a-scene");
 
-    // 1️⃣ Draw spheres and labels
-    data.points.forEach((p) => {
-      const sphere = document.createElement("a-sphere");
-      sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
-      sphere.setAttribute("color", "yellow");
-      sphere.setAttribute("radius", "0.25");
-      scene.appendChild(sphere);
+            data.points.forEach((p) => {
+              const sphere = document.createElement("a-sphere");
+              sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
+              sphere.setAttribute("color", "yellow");
+              sphere.setAttribute("radius", "0.25");
+              scene.appendChild(sphere);
 
-      const label = document.createElement("a-text");
-      label.setAttribute("value", p.label);
-      label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
-      label.setAttribute("look-at", "#userCam");
-      label.setAttribute("color", "white");
-      label.setAttribute("align", "center");
-      label.setAttribute("scale", "2 2 2");
-      scene.appendChild(label);
-    });
-
-    // 2️⃣ Draw connecting path between waypoints
-    for (let i = 0; i < data.path.length - 1; i++) {
-      const p1 = data.path[i];
-      const p2 = data.path[i + 1];
-      const line = document.createElement("a-entity");
-      line.setAttribute("line", {
-        start: `${p1[0]} ${p1[1] + 1.1} ${p1[2]}`,
-        end: `${p2[0]} ${p2[1] + 1.1} ${p2[2]}`,
-        color: "#00FFFF"
-      });
-      scene.appendChild(line);
-    }
-  })
-  .catch((err) => console.error("Error loading JSON:", err));
+              const label = document.createElement("a-text");
+              label.setAttribute("value", p.label);
+              label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
+              label.setAttribute("look-at", "#userCam");
+              label.setAttribute("color", "white");
+              label.setAttribute("align", "center");
+              label.setAttribute("scale", "2 2 2");
+              scene.appendChild(label);
+            });
+          })
+          .catch((err) => console.error("Error loading JSON:", err));
+      }
+    </script>
+  </body>
+</html>
