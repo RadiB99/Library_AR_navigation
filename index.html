@@ -113,44 +113,40 @@
         };
 
         // Load library items from JSON
-        fetch("libraryPath.json")
-          .then((res) => res.json())
-          .then((data) => {
-            const scene = document.querySelector("a-scene");
+fetch("libraryPath.json")
+  .then((res) => res.json())
+  .then((data) => {
+    const scene = document.querySelector("a-scene");
 
-            data.points.forEach((p) => {
-              const sphere = document.createElement("a-sphere");
-              sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
-              sphere.setAttribute("color", "yellow");
-              sphere.setAttribute("radius", "0.25");
-              scene.appendChild(sphere);
+    // 1️⃣ Draw spheres and labels
+    data.points.forEach((p) => {
+      const sphere = document.createElement("a-sphere");
+      sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
+      sphere.setAttribute("color", "yellow");
+      sphere.setAttribute("radius", "0.25");
+      scene.appendChild(sphere);
 
-              const label = document.createElement("a-text");
-              label.setAttribute("value", p.label);
-              label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
-              label.setAttribute("look-at", "#userCam");
-              label.setAttribute("color", "white");
-              label.setAttribute("align", "center");
-              label.setAttribute("scale", "2 2 2");
-              scene.appendChild(label);
-            });
+      const label = document.createElement("a-text");
+      label.setAttribute("value", p.label);
+      label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
+      label.setAttribute("look-at", "#userCam");
+      label.setAttribute("color", "white");
+      label.setAttribute("align", "center");
+      label.setAttribute("scale", "2 2 2");
+      scene.appendChild(label);
+    });
 
-            // 2️⃣ Draw connecting path between waypoints
-            for (let i = 0; i < data.path.length - 1; i++) {
-                const p1 = data.path[i];
-                const p2 = data.path[i + 1];
-                const line = document.createElement("a-entity");
-                line.setAttribute("line", {
-                  start: `${p1[0]} ${p1[1] + 1.1} ${p1[2]}`,
-                  end: `${p2[0]} ${p2[1] + 1.1} ${p2[2]}`,
-                  color: "#00FFFF",
-                });
-                scene.appendChild(line);
-              }
-            });
-          })
-          .catch((err) => console.error("Error loading JSON:", err));
-      }
-    </script>
-  </body>
-</html>
+    // 2️⃣ Draw connecting path between waypoints
+    for (let i = 0; i < data.path.length - 1; i++) {
+      const p1 = data.path[i];
+      const p2 = data.path[i + 1];
+      const line = document.createElement("a-entity");
+      line.setAttribute("line", {
+        start: `${p1[0]} ${p1[1] + 1.1} ${p1[2]}`,
+        end: `${p2[0]} ${p2[1] + 1.1} ${p2[2]}`,
+        color: "#00FFFF"
+      });
+      scene.appendChild(line);
+    }
+  })
+  .catch((err) => console.error("Error loading JSON:", err));
