@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AR Library Experience</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
+  </head>
+
+  <body style="margin: 0; overflow: hidden">
+    <!-- Start Screen -->
+    <div
+      id="startScreen"
+      style="
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: black;
+        color: white;
+        font-size: 1.2em;
+        z-index: 100;
+        cursor: pointer;
+      "
+    >
+      <p>👋 Tap anywhere to start AR experience</p>
+    </div>
+
+    <!-- AR Scene -->
+    <a-scene
+      embedded
+      arjs="sourceType: camera; facingMode: environment; debugUIEnabled: false;"
+      vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true;"
+      style="display: none"
+    >
+      <a-camera id="userCam" position="0 1.6 0"></a-camera>
+    </a-scene>
+
+    <script>
+      const startScreen = document.getElementById("startScreen");
+      const scene = document.querySelector("a-scene");
+
+      // Detect both click & touch (for iPhone Safari)
+      startScreen.addEventListener("click", startAR);
+      startScreen.addEventListener("touchstart", startAR);
+
+      function startAR() {
+        startScreen.style.display = "none";
+        scene.style.display = "block";
+        initARScene();
+      }
+
+      function initARScene() {
+        // On-screen control buttons
+        const btns = document.createElement("div");
+        btns.innerHTML = `
+          <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+                      display:flex;gap:10px;z-index:10;">
+            <button id="forward" style="padding:10px 20px;font-size:16px;">↑ Forward</button>
+            <button id="backward" style="padding:10px 20px;font-size:16px;">↓ Back</button>
+          </div>`;
+        document.body.appendChild(btns);
+
+        let z = 0;
+        const step = 0.5;
+        const cam = document.querySelector("#userCam");
+
+        // Keyboard movement (for testing on desktop)
+        window.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowUp") z -= step;
+          if (e.key === "ArrowDown") z += step;
+          cam.setAttribute("position", `0 1.6 ${z}`);
+        });
+
+        // Touch button controls
+        document.getElementById("forward").onclick = () => {
+          z -= step;
+          cam.setAttribute("position", `0 1.6 ${z}`);
+        };
+        document.getElementById("backward").onclick = () => {
+          z += step;
+          cam.setAttribute("position", `0 1.6 ${z}`);
+        };
+
+        // Load library items from JSON file
+        fetch("libraryPath.json")
+          .then((res) => res.json())
+          .then((data) => {
+            const scene = document.querySelector("a-scene");
+
+            data.points.forEach((p) => {
+              // Yellow sphere marker
+              const sphere = document.createElement("a-sphere");
+              sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
+              sphere.setAttribute("color", "yellow");
+              sphere.setAttribute("radius", "0.25");
+              scene.appendChild(sphere);
+
+              // Label text
+              const label = document.createElement("a-text");
+              label.setAttribute("value", p.label);
+              label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
+              label.setAttribute("look-at", "#userCam");
+              label.setAttribute("color", "white");
+              label.setAttribute("align", "center");
+              label.setAttribute("scale", "2 2 2");
+              scene.appendChild(label);
+            });
+          })
+          .catch((err) => {
+            console.error("Error loading JSON:", err);
+          });
+      }
+    </script>
+  </body>
+</html>
