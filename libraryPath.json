@@ -1,33 +1,39 @@
 {
-  "libraryName": "Five Corners Library - Pathfinder Demo",
   "points": [
     {
-      "id": "entrance",
+      "id": 3,
+      "label": "The Girl with the Dragon Tattoo (DVD)",
       "x": 0,
       "y": 0,
-      "z": 0,
-      "label": "Entrance / Reception"
+      "z": -6
     },
     {
-      "id": "dvd",
+      "id": 2,
+      "label": "A Dying Light (Book)",
       "x": 0,
       "y": 0,
-      "z": 2.4,
-      "label": "Girl with the Dragon Tattoo (DVD)"
+      "z": -23
     },
     {
-      "id": "dyingLight",
+      "id": 1,
+      "label": "Devotion (Book)",
       "x": 0,
       "y": 0,
-      "z": 9.3,
-      "label": "A Dying Light (Book)"
+      "z": -33.5
     },
-    { "id": "devotion", "x": 0, "y": 0, "z": 13.5, "label": "Devotion (Book)" }
+    {
+      "id": 99,
+      "label": "Return to Entrance / Reception",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
   ],
   "path": [
-    ["entrance", "dvd"],
-    ["dvd", "dyingLight"],
-    ["dyingLight", "devotion"],
-    ["devotion", "entrance"]
+    [0, 0, 0],
+    [0, 0, -6],
+    [0, 0, -23],
+    [0, 0, -33.5],
+    [0, 0, 0]
   ]
 }
