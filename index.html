@@ -2,10 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AR Item Picker - WebXR Prototype</title>
+    <title>AR Item Picker Prototype</title>
 
-    <!-- ✅ Only A-Frame (no AR.js needed) -->
+    <!-- A-Frame + AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
 
     <style>
       :root {
@@ -23,7 +24,7 @@
         overflow: hidden;
       }
 
-      /* Welcome Screen UI */
+      /* Welcome Screen */
       #welcomeUI {
         position: fixed;
         inset: 0;
@@ -101,7 +102,7 @@
   </head>
 
   <body>
-    <!-- Step 1: Welcome Screen -->
+    <!-- Step 1: Welcome UI -->
     <div id="welcomeUI">
       <h1>👋 Hello, welcome!</h1>
       <p>What can I help you pick today?</p>
@@ -114,26 +115,25 @@
       </div>
     </div>
 
-    <!-- Step 2: WebXR AR Scene -->
+    <!-- Step 2: AR Scene -->
     <a-scene
-      renderer="colorManagement: true; antialias: true;"
-      xr-mode-ui="enabled: true"
-      webxr="optionalFeatures: hit-test, local-floor;"
-      ar-mode-ui="enabled: true"
       embedded
+      arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
+      vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true; antialias: true;"
+      device-orientation-permission-ui="enabled: true"
     >
-      <a-camera id="userCam" look-controls="enabled: false"></a-camera>
+      <a-camera id="userCam" position="0 1.6 0"></a-camera>
     </a-scene>
 
     <script>
-      // --- UI Elements ---
       const welcomeUI = document.getElementById("welcomeUI");
       const itemList = document.getElementById("itemList");
       const addItemBtn = document.getElementById("addItem");
       const startARBtn = document.getElementById("startAR");
       const scene = document.querySelector("a-scene");
 
-      // --- Start with one blank row ---
+      // start with one empty input
       addItemRow();
 
       addItemBtn.onclick = () => addItemRow();
@@ -156,7 +156,6 @@
         itemList.appendChild(row);
       }
 
-      // --- Start AR experience ---
       startARBtn.onclick = () => {
         const items = Array.from(itemList.querySelectorAll("input"))
           .map((i) => i.value.trim())
@@ -169,31 +168,34 @@
 
         welcomeUI.style.display = "none";
         scene.style.display = "block";
-        startAR(items);
+
+        startARExperience(items);
       };
 
-      // --- Load coordinates from JSON + place items ---
-      function startAR(items) {
+      // --- Step 2: Load scene and map items ---
+      function startARExperience(items) {
+        requestIOSPermission();
+
+        // Load available coordinates from your library JSON
         fetch("libraryPath.json")
           .then((res) => res.json())
           .then((data) => {
             const availablePoints = data.points || [];
-            const cam = document.getElementById("userCam");
+            const scene = document.querySelector("a-scene");
 
+            // Randomly assign user’s items to JSON coordinates
             items.forEach((itemName, i) => {
-              const point = availablePoints[i % availablePoints.length];
+              const point = availablePoints[i % availablePoints.length]; // reuse if fewer coords
               const x = parseFloat(point.x);
               const y = parseFloat(point.y);
               const z = parseFloat(point.z);
 
-              // Yellow sphere marker
               const sphere = document.createElement("a-sphere");
               sphere.setAttribute("position", `${x} ${y + 1} ${z}`);
               sphere.setAttribute("color", "yellow");
               sphere.setAttribute("radius", "0.25");
               scene.appendChild(sphere);
 
-              // Floating label
               const label = document.createElement("a-text");
               label.setAttribute("value", itemName);
               label.setAttribute("position", `${x} ${y + 1.4} ${z}`);
@@ -205,6 +207,18 @@
             });
           })
           .catch((err) => console.error("Error loading JSON:", err));
+      }
+
+      // --- iOS motion permission (required on Safari) ---
+      function requestIOSPermission() {
+        if (
+          typeof DeviceMotionEvent !== "undefined" &&
+          typeof DeviceMotionEvent.requestPermission === "function"
+        ) {
+          DeviceMotionEvent.requestPermission()
+            .then((response) => console.log("Motion permission:", response))
+            .catch(console.error);
+        }
       }
     </script>
   </body>
