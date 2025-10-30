@@ -1,45 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Library AR Experience</title>
+    <title>AR Library Prototype</title>
 
     <!-- A-Frame + AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
 
     <style>
+      :root {
+        --accent: #38bdf8;
+      }
       body {
         margin: 0;
         overflow: hidden;
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
       }
-      #startScreen {
+      #welcomeUI {
         position: fixed;
         inset: 0;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: black;
-        color: white;
-        font-size: 1.2em;
+        background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
         z-index: 100;
-        cursor: pointer;
+        text-align: center;
+        padding: 1.5rem;
+      }
+      #welcomeUI h1 {
+        font-size: 1.6rem;
+        margin-bottom: 0.5rem;
+      }
+      #welcomeUI p {
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
       }
       button {
-        padding: 10px 20px;
-        font-size: 16px;
+        background: var(--accent);
         border: none;
-        border-radius: 6px;
-        background: #f3f3f3;
+        color: #000;
+        font-weight: 600;
+        border-radius: 0.6rem;
+        padding: 0.8rem 1.4rem;
+        cursor: pointer;
+      }
+      button:active {
+        transform: translateY(1px);
       }
     </style>
   </head>
 
   <body>
-    <!-- Start Overlay -->
-    <div id="startScreen">👋 Tap anywhere to start AR experience</div>
+    <!-- Step 1: Welcome screen -->
+    <div id="welcomeUI">
+      <h1>📍 AR Library Prototype</h1>
+      <p>Follow the yellow markers to locate your items and checkout point.</p>
+      <button id="startAR">🚀 Start AR Experience</button>
+    </div>
 
-    <!-- AR Scene -->
+    <!-- Step 2: AR Scene -->
     <a-scene
       embedded
       arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
@@ -52,55 +75,35 @@
     </a-scene>
 
     <script>
-      const startScreen = document.getElementById("startScreen");
+      const startARBtn = document.getElementById("startAR");
+      const welcomeUI = document.getElementById("welcomeUI");
       const scene = document.querySelector("a-scene");
 
-      // Handle both tap and touch (for iPhone Safari)
-      startScreen.addEventListener("click", startAR);
-      startScreen.addEventListener("touchstart", startAR);
-
-      function startAR() {
-        startScreen.style.display = "none";
+      // --- Step 1: Handle start ---
+      startARBtn.addEventListener("click", () => {
+        welcomeUI.style.display = "none";
         scene.style.display = "block";
+        startARExperience();
+      });
+
+      // --- Step 2: AR logic ---
+      function startARExperience() {
         requestIOSPermission();
-        initARScene();
-      }
 
-      // iOS motion permission (fix for iPhone)
-      function requestIOSPermission() {
-        if (
-          typeof DeviceMotionEvent !== "undefined" &&
-          typeof DeviceMotionEvent.requestPermission === "function"
-        ) {
-          DeviceMotionEvent.requestPermission()
-            .then((response) => console.log("Motion permission:", response))
-            .catch(console.error);
-        }
-      }
-
-      function initARScene() {
-        // On-screen control buttons
-        const btns = document.createElement("div");
-        btns.innerHTML = `
+        // Controls for movement
+        const controls = document.createElement("div");
+        controls.innerHTML = `
           <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
                       display:flex;gap:10px;z-index:10;">
             <button id="forward">↑ Forward</button>
             <button id="backward">↓ Back</button>
           </div>`;
-        document.body.appendChild(btns);
+        document.body.appendChild(controls);
 
+        const cam = document.getElementById("userCam");
         let z = 0;
         const step = 0.5;
-        const cam = document.querySelector("#userCam");
 
-        // Keyboard movement (desktop)
-        window.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowUp") z -= step;
-          if (e.key === "ArrowDown") z += step;
-          cam.setAttribute("position", `0 1.6 ${z}`);
-        });
-
-        // Touch button movement
         document.getElementById("forward").onclick = () => {
           z -= step;
           cam.setAttribute("position", `0 1.6 ${z}`);
@@ -110,19 +113,21 @@
           cam.setAttribute("position", `0 1.6 ${z}`);
         };
 
-        // Load library items from JSON (just spheres + labels)
-        fetch("libraryPath.json")
+        // --- Load fixed item positions from your library JSON ---
+        fetch("libraryPath.json") // ensure this file is in the same folder
           .then((res) => res.json())
           .then((data) => {
-            const scene = document.querySelector("a-scene");
+            const points = data.points || [];
 
-            data.points.forEach((p) => {
+            points.forEach((p) => {
+              // Yellow marker sphere
               const sphere = document.createElement("a-sphere");
               sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
               sphere.setAttribute("color", "yellow");
               sphere.setAttribute("radius", "0.25");
               scene.appendChild(sphere);
 
+              // Label text
               const label = document.createElement("a-text");
               label.setAttribute("value", p.label);
               label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
@@ -133,7 +138,21 @@
               scene.appendChild(label);
             });
           })
-          .catch((err) => console.error("Error loading JSON:", err));
+          .catch((err) =>
+            console.error("Error loading libraryPath.json:", err)
+          );
+      }
+
+      // --- iOS motion permission ---
+      function requestIOSPermission() {
+        if (
+          typeof DeviceMotionEvent !== "undefined" &&
+          typeof DeviceMotionEvent.requestPermission === "function"
+        ) {
+          DeviceMotionEvent.requestPermission()
+            .then((response) => console.log("Motion permission:", response))
+            .catch(console.error);
+        }
       }
     </script>
   </body>
