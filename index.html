@@ -118,12 +118,12 @@
     <!-- Step 2: AR Scene -->
     <a-scene
       embedded
-      arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
       vr-mode-ui="enabled: false"
       renderer="logarithmicDepthBuffer: true; antialias: true;"
+      arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
       device-orientation-permission-ui="enabled: true"
     >
-      <a-camera id="userCam" position="0 1.6 0"></a-camera>
+      <a-camera id="userCam" look-controls="enabled: false"> </a-camera>
     </a-scene>
 
     <script>
