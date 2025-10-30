@@ -114,15 +114,20 @@
         };
 
         // --- Load fixed item positions from your library JSON ---
-        fetch("libraryPath.json") // ensure this file is in the same folder
+        fetch("libraryPath.json") // make sure file is in the same folder
           .then((res) => res.json())
           .then((data) => {
             const points = data.points || [];
 
             points.forEach((p) => {
+              // ensure numeric values
+              const x = parseFloat(p.x);
+              const y = parseFloat(p.y);
+              const z = parseFloat(p.z);
+
               // Yellow marker sphere
               const sphere = document.createElement("a-sphere");
-              sphere.setAttribute("position", `${p.x} ${p.y + 1} ${p.z}`);
+              sphere.setAttribute("position", `${x} ${y + 1} ${z}`);
               sphere.setAttribute("color", "yellow");
               sphere.setAttribute("radius", "0.25");
               scene.appendChild(sphere);
@@ -130,7 +135,7 @@
               // Label text
               const label = document.createElement("a-text");
               label.setAttribute("value", p.label);
-              label.setAttribute("position", `${p.x} ${p.y + 1.4} ${p.z}`);
+              label.setAttribute("position", `${x} ${y + 1.4} ${z}`);
               label.setAttribute("look-at", "#userCam");
               label.setAttribute("color", "white");
               label.setAttribute("align", "center");
