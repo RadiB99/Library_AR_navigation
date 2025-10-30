@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AR Library Prototype</title>
+    <title>AR Item Picker Prototype</title>
 
     <!-- A-Frame + AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -10,15 +10,21 @@
 
     <style>
       :root {
+        --bg: #0f172a;
+        --panel: #1e293b;
         --accent: #38bdf8;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
       }
       body {
         margin: 0;
-        overflow: hidden;
         font-family: system-ui, sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
       }
+
+      /* Welcome Screen */
       #welcomeUI {
         position: fixed;
         inset: 0;
@@ -32,34 +38,81 @@
         padding: 1.5rem;
       }
       #welcomeUI h1 {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         margin-bottom: 0.5rem;
       }
       #welcomeUI p {
-        color: #94a3b8;
-        margin-bottom: 1.5rem;
+        color: var(--muted);
+        margin-bottom: 1.2rem;
       }
-      button {
-        background: var(--accent);
+      #itemList {
+        width: 100%;
+        max-width: 350px;
+        text-align: left;
+      }
+      .item-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
+      }
+      .item-row input {
+        flex: 1;
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 0.5rem;
+        padding: 0.55rem 0.6rem;
+        outline: none;
+      }
+      .item-row button {
+        background: #ef4444;
+        color: #fff;
         border: none;
-        color: #000;
-        font-weight: 600;
-        border-radius: 0.6rem;
-        padding: 0.8rem 1.4rem;
+        border-radius: 0.4rem;
+        padding: 0.4rem 0.6rem;
         cursor: pointer;
       }
-      button:active {
-        transform: translateY(1px);
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: center;
+        margin-top: 0.8rem;
+      }
+      .btn {
+        background: var(--accent);
+        color: #000;
+        font-weight: 600;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.1rem;
+        cursor: pointer;
+      }
+      .btn-secondary {
+        background: rgba(30, 41, 59, 0.7);
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+
+      /* Hide AR scene by default */
+      a-scene {
+        display: none;
       }
     </style>
   </head>
 
   <body>
-    <!-- Step 1: Welcome screen -->
+    <!-- Step 1: Welcome UI -->
     <div id="welcomeUI">
-      <h1>📍 AR Library Prototype</h1>
-      <p>Follow the yellow markers to locate your items and checkout point.</p>
-      <button id="startAR">🚀 Start AR Experience</button>
+      <h1>👋 Hello, welcome!</h1>
+      <p>What can I help you pick today?</p>
+
+      <div id="itemList"></div>
+
+      <div class="actions">
+        <button id="addItem" class="btn-secondary">+ Add Item</button>
+        <button id="startAR" class="btn">Start AR Experience</button>
+      </div>
     </div>
 
     <!-- Step 2: AR Scene -->
@@ -69,72 +122,82 @@
       vr-mode-ui="enabled: false"
       renderer="logarithmicDepthBuffer: true; antialias: true;"
       device-orientation-permission-ui="enabled: true"
-      style="display: none"
     >
-      <a-camera id="userCam" position="0 1.6 0" camera></a-camera>
+      <a-camera id="userCam" position="0 1.6 0"></a-camera>
     </a-scene>
 
     <script>
-      const startARBtn = document.getElementById("startAR");
       const welcomeUI = document.getElementById("welcomeUI");
+      const itemList = document.getElementById("itemList");
+      const addItemBtn = document.getElementById("addItem");
+      const startARBtn = document.getElementById("startAR");
       const scene = document.querySelector("a-scene");
 
-      // --- Step 1: Handle start ---
-      startARBtn.addEventListener("click", () => {
+      // start with one empty input
+      addItemRow();
+
+      addItemBtn.onclick = () => addItemRow();
+
+      function addItemRow(defaultVal = "") {
+        const row = document.createElement("div");
+        row.className = "item-row";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "Enter item name";
+        input.value = defaultVal;
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "✕";
+        delBtn.onclick = () => row.remove();
+
+        row.appendChild(input);
+        row.appendChild(delBtn);
+        itemList.appendChild(row);
+      }
+
+      startARBtn.onclick = () => {
+        const items = Array.from(itemList.querySelectorAll("input"))
+          .map((i) => i.value.trim())
+          .filter(Boolean);
+
+        if (items.length === 0) {
+          alert("Please enter at least one item.");
+          return;
+        }
+
         welcomeUI.style.display = "none";
         scene.style.display = "block";
-        startARExperience();
-      });
 
-      // --- Step 2: AR logic ---
-      function startARExperience() {
+        startARExperience(items);
+      };
+
+      // --- Step 2: Load scene and map items ---
+      function startARExperience(items) {
         requestIOSPermission();
 
-        // Controls for movement
-        const controls = document.createElement("div");
-        controls.innerHTML = `
-          <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-                      display:flex;gap:10px;z-index:10;">
-            <button id="forward">↑ Forward</button>
-            <button id="backward">↓ Back</button>
-          </div>`;
-        document.body.appendChild(controls);
-
-        const cam = document.getElementById("userCam");
-        let z = 0;
-        const step = 0.5;
-
-        document.getElementById("forward").onclick = () => {
-          z -= step;
-          cam.setAttribute("position", `0 1.6 ${z}`);
-        };
-        document.getElementById("backward").onclick = () => {
-          z += step;
-          cam.setAttribute("position", `0 1.6 ${z}`);
-        };
-
-        // --- Load fixed item positions from your library JSON ---
-        fetch("libraryPath.json") // make sure file is in the same folder
+        // Load available coordinates from your library JSON
+        fetch("libraryPath.json")
           .then((res) => res.json())
           .then((data) => {
-            const points = data.points || [];
+            const availablePoints = data.points || [];
+            const scene = document.querySelector("a-scene");
 
-            points.forEach((p) => {
-              // ensure numeric values
-              const x = parseFloat(p.x);
-              const y = parseFloat(p.y);
-              const z = parseFloat(p.z);
+            // Randomly assign user’s items to JSON coordinates
+            items.forEach((itemName, i) => {
+              const point = availablePoints[i % availablePoints.length]; // reuse if fewer coords
+              const x = parseFloat(point.x);
+              const y = parseFloat(point.y);
+              const z = parseFloat(point.z);
 
-              // Yellow marker sphere
               const sphere = document.createElement("a-sphere");
               sphere.setAttribute("position", `${x} ${y + 1} ${z}`);
               sphere.setAttribute("color", "yellow");
               sphere.setAttribute("radius", "0.25");
               scene.appendChild(sphere);
 
-              // Label text
               const label = document.createElement("a-text");
-              label.setAttribute("value", p.label);
+              label.setAttribute("value", itemName);
               label.setAttribute("position", `${x} ${y + 1.4} ${z}`);
               label.setAttribute("look-at", "#userCam");
               label.setAttribute("color", "white");
@@ -143,12 +206,10 @@
               scene.appendChild(label);
             });
           })
-          .catch((err) =>
-            console.error("Error loading libraryPath.json:", err)
-          );
+          .catch((err) => console.error("Error loading JSON:", err));
       }
 
-      // --- iOS motion permission ---
+      // --- iOS motion permission (required on Safari) ---
       function requestIOSPermission() {
         if (
           typeof DeviceMotionEvent !== "undefined" &&
